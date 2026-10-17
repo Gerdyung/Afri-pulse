@@ -1,0 +1,28 @@
+{% extends 'base.html' %}
+{% block title %}Subscribe · Afri-Pulse{% endblock %}
+{% block content %}
+<div class="max-w-3xl space-y-8">
+  <div class="rounded-3xl border border-slate-800 bg-slate-900/70 p-8 shadow-xl shadow-slate-900/20">
+    <div class="space-y-4">
+      <p class="text-sm uppercase tracking-[0.24em] text-cyan-400/80">Secure subscription</p>
+      <h2 class="text-3xl font-semibold text-white">Start your member journey.</h2>
+      <p class="text-slate-400">Enter your email and choose a subscription amount to start checkout with Paystack.</p>
+    </div>
+    <form method="post" class="mt-8 space-y-6">
+      <div>
+        <label class="text-sm font-semibold text-slate-200" for="email">Email address</label>
+        <input id="email" name="email" type="email" required class="mt-3 w-full rounded-3xl border border-slate-800 bg-slate-950/80 px-4 py-3 text-slate-100 outline-none transition focus:border-cyan-400 focus:ring-2 focus:ring-cyan-500/20" placeholder="you@example.com" />
+      </div>
+      <div>
+        <label class="text-sm font-semibold text-slate-200" for="amount">Subscription amount (NGN)</label>
+        <input id="amount" name="amount" type="number" min="100" step="50" required class="mt-3 w-full rounded-3xl border border-slate-800 bg-slate-950/80 px-4 py-3 text-slate-100 outline-none transition focus:border-cyan-400 focus:ring-2 focus:ring-cyan-500/20" placeholder="799" />
+      </div>
+      <button type="submit" class="inline-flex w-full items-center justify-center rounded-full bg-cyan-500 px-6 py-3 text-sm font-semibold text-slate-950 transition hover:bg-cyan-400">Proceed to Paystack</button>
+    </form>
+  </div>
+  <div class="rounded-3xl border border-slate-800 bg-slate-900/70 p-8 shadow-xl shadow-slate-900/20">
+    <h3 class="text-xl font-semibold text-white">Paystack integration</h3>
+    <p class="mt-3 text-slate-400">This app initializes a Paystack transaction from the backend and redirects users to the checkout page.</p>
+  </div>
+</div>
+{% endblock %}

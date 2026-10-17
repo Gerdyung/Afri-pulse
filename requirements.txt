@@ -1,0 +1,12 @@
+Flask>=2.2
+requests>=2.31
+python-dotenv>=1.0
+Flask-SQLAlchemy>=3.0
+Flask-Login>=0.6.2
+Werkzeug>=2.3
+Flask-SocketIO>=5.3,<6
+python-socketio>=5.8,<6
+python-engineio>=4.8,<5
+eventlet>=0.33,<1
+gunicorn
+

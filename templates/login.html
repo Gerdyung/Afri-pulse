@@ -1,0 +1,36 @@
+{% extends 'base.html' %}
+{% block title %}Login · Afri-Pulse{% endblock %}
+{% block content %}
+<div class="mx-auto max-w-md">
+  <div class="rounded-3xl border border-slate-800 bg-slate-900/70 p-8 shadow-xl shadow-slate-900/20">
+    <div class="text-center">
+      <p class="text-sm uppercase tracking-[0.24em] text-cyan-400/80">Sign in</p>
+      <h2 class="mt-3 text-3xl font-semibold text-white">Welcome back</h2>
+      <p class="mt-2 text-slate-400">Sign in to your Afri-Pulse account</p>
+    </div>
+
+    <form method="POST" class="mt-8 space-y-6">
+      <div>
+        <label for="email" class="block text-sm font-medium text-slate-300 mb-2">Email</label>
+        <input type="email" id="email" name="email" required class="w-full rounded-2xl border border-slate-700 bg-slate-950/50 px-4 py-3 text-slate-100 placeholder-slate-500 focus:border-cyan-500 focus:outline-none" placeholder="you@example.com">
+      </div>
+
+      <div>
+        <label for="password" class="block text-sm font-medium text-slate-300 mb-2">Password</label>
+        <input type="password" id="password" name="password" required class="w-full rounded-2xl border border-slate-700 bg-slate-950/50 px-4 py-3 text-slate-100 placeholder-slate-500 focus:border-cyan-500 focus:outline-none" placeholder="••••••••">
+      </div>
+
+      <div class="flex items-center">
+        <input type="checkbox" id="remember" name="remember" class="h-4 w-4 rounded border-slate-700 bg-slate-950/50">
+        <label for="remember" class="ml-2 text-sm text-slate-400">Remember me</label>
+      </div>
+
+      <button type="submit" class="w-full rounded-full bg-cyan-500 px-6 py-3 text-sm font-semibold text-slate-950 transition hover:bg-cyan-400">Sign In</button>
+    </form>
+
+    <div class="mt-6 text-center">
+      <p class="text-sm text-slate-400">Don't have an account? <a href="/signup" class="text-cyan-400 hover:text-cyan-300">Sign up</a></p>
+    </div>
+  </div>
+</div>
+{% endblock %}

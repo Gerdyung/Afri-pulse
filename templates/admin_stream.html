@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+{% block title %}Admin — Stream Settings{% endblock %}
+{% block content %}
+<div class="mx-auto max-w-3xl">
+  <h2 class="text-xl font-semibold mb-4">Stream Settings</h2>
+
+  <form method="post" class="space-y-4">
+    <div>
+      <label class="block text-sm font-medium text-gray-200">RTMP Push URL</label>
+      <input name="rtmp_url" value="{{ rtmp_url }}" class="mt-1 block w-full rounded-md bg-slate-800 border border-slate-700 p-2" />
+      <p class="text-xs text-slate-400 mt-1">Example: rtmp://a.rtmp.youtube.com/live2</p>
+    </div>
+
+    <div>
+      <label class="block text-sm font-medium text-gray-200">Stream Key</label>
+      <input name="stream_key" placeholder="Enter new stream key to update" class="mt-1 block w-full rounded-md bg-slate-800 border border-slate-700 p-2" />
+      {% if rtmp_key_masked %}
+        <p class="text-xs text-slate-400 mt-1">Current: <span class="font-mono">{{ rtmp_key_masked }}</span></p>
+      {% endif %}
+    </div>
+
+    <div>
+      <button type="submit" class="rounded bg-cyan-500 px-4 py-2">Save</button>
+    </div>
+  </form>
+</div>
+{% endblock %}
