@@ -8,6 +8,7 @@ from dotenv import load_dotenv
 from urllib.parse import quote_plus
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
+from werkzeug.exceptions import RequestEntityTooLarge
 from sqlalchemy import inspect, text
 from datetime import datetime
 from decimal import Decimal, InvalidOperation
@@ -39,17 +40,33 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 # File upload configuration
 UPLOAD_FOLDER = 'uploads/videos'
+AVATAR_FOLDER = 'uploads/avatars'
 ALLOWED_EXTENSIONS = {'mp4', 'avi', 'mov', 'mkv', 'webm'}
+ALLOWED_AVATAR_EXTENSIONS = {'png', 'jpg', 'jpeg', 'webp', 'gif'}
+
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
-MAX_FILE_SIZE = 100 * 1024 * 1024  # 100MB
+
+def allowed_avatar_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_AVATAR_EXTENSIONS
+
+MAX_FILE_SIZE = 500 * 1024 * 1024  # 500 MiB
+MAX_REQUEST_SIZE = MAX_FILE_SIZE + 1 * 1024 * 1024  # Allow multipart form overhead
 
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
-app.config['MAX_CONTENT_LENGTH'] = MAX_FILE_SIZE
+app.config['MAX_CONTENT_LENGTH'] = MAX_REQUEST_SIZE
 
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+os.makedirs(AVATAR_FOLDER, exist_ok=True)
+
 # Initialize extensions
 db = SQLAlchemy(app)
+
+# Follower Many-to-Many Association Table
+followers_table = db.Table('followers',
+    db.Column('follower_id', db.Integer, db.ForeignKey('user.id'), primary_key=True),
+    db.Column('followed_id', db.Integer, db.ForeignKey('user.id'), primary_key=True)
+)
 
 
 def ensure_database_schema():
@@ -57,10 +74,16 @@ def ensure_database_schema():
         inspector = inspect(db.engine)
         table_names = set(inspector.get_table_names())
 
-        if 'creator' not in table_names:
+        if 'creator' not in table_names or 'user' not in table_names:
             db.create_all()
             return
 
+        # Check and add avatar column to user table if missing
+        user_columns = {column['name'] for column in inspector.get_columns('user')}
+        if 'avatar' not in user_columns:
+            db.session.execute(text("ALTER TABLE user ADD COLUMN avatar VARCHAR(255) DEFAULT 'default_avatar.png'"))
+
+        # Check and add creator columns if missing
         existing_columns = {column['name'] for column in inspector.get_columns('creator')}
         column_definitions = {
             'paystack_subaccount_code': 'VARCHAR(120)',
@@ -84,6 +107,14 @@ ensure_database_schema()
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'login'
+
+
+@app.errorhandler(RequestEntityTooLarge)
+def handle_request_too_large(_error):
+    return render_template(
+        "error.html",
+        message="The upload is too large. Please choose a video smaller than 500 MiB.",
+    ), 413
 
 # SocketIO for realtime signaling
 socketio = SocketIO(app, cors_allowed_origins="*", async_mode='eventlet')
@@ -190,7 +221,27 @@ class User(UserMixin, db.Model):
     email = db.Column(db.String(120), unique=True, nullable=False)
     password_hash = db.Column(db.String(255), nullable=False)
     username = db.Column(db.String(120), unique=True, nullable=False)
+    avatar = db.Column(db.String(255), default='default_avatar.png')
     creator = db.relationship('Creator', backref='user', uselist=False, cascade='all, delete-orphan')
+
+    # Followers / Following Relationships
+    followed = db.relationship(
+        'User', secondary=followers_table,
+        primaryjoin=(followers_table.c.follower_id == id),
+        secondaryjoin=(followers_table.c.followed_id == id),
+        backref=db.backref('followers', lazy='dynamic'), lazy='dynamic'
+    )
+
+    def follow(self, user):
+        if not self.is_following(user):
+            self.followed.append(user)
+
+    def unfollow(self, user):
+        if self.is_following(user):
+            self.followed.remove(user)
+
+    def is_following(self, user):
+        return self.followed.filter(followers_table.c.followed_id == user.id).count() > 0
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
@@ -264,11 +315,6 @@ def paystack_headers():
         "Authorization": f"Bearer {PAYSTACK_SECRET_KEY}",
         "Content-Type": "application/json",
     }
-
-
-def allowed_file(filename):
-    return '.' in filename and \
-        filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 
 def get_creator_videos(username):
@@ -449,8 +495,17 @@ def logout():
 # Creator Routes
 @app.route("/")
 def index():
-    creators = Creator.query.all()
-    return render_template("index.html", creators=creators)
+    search_query = request.args.get("q", "").strip()[:120]
+    users = []
+    if search_query:
+        users = (
+            User.query.join(Creator)
+            .filter(User.username.ilike(f"%{search_query}%"))
+            .order_by(User.username.asc())
+            .limit(20)
+            .all()
+        )
+    return render_template("index.html", users=users, search_query=search_query)
 
 
 @app.route("/creator/<username>")
@@ -490,6 +545,16 @@ def edit_profile():
         return redirect(url_for('dashboard'))
     
     if request.method == "POST":
+        # Handle Profile Picture Upload
+        if 'avatar' in request.files:
+            file = request.files['avatar']
+            if file and file.filename != '' and allowed_avatar_file(file.filename):
+                filename = secure_filename(file.filename)
+                unique_filename = f"{current_user.id}_{uuid.uuid4().hex[:8]}_{filename}"
+                file_path = os.path.join(AVATAR_FOLDER, unique_filename)
+                file.save(file_path)
+                current_user.avatar = unique_filename
+
         current_user.creator.display_name = request.form.get("display_name", "").strip()
         current_user.creator.subtitle = request.form.get("subtitle", "").strip()
         current_user.creator.description = request.form.get("description", "").strip()
@@ -553,6 +618,13 @@ def upload_video(username):
         if file.filename == '':
             flash('No video file selected')
             return redirect(request.url)
+
+        file.stream.seek(0, os.SEEK_END)
+        file_size = file.stream.tell()
+        file.stream.seek(0)
+        if file_size > MAX_FILE_SIZE:
+            flash('The video is too large. Please upload a file smaller than 500 MiB.')
+            return redirect(request.url)
         
         if file and allowed_file(file.filename):
             filename = secure_filename(file.filename)
@@ -579,13 +651,38 @@ def upload_video(username):
             flash('Invalid file type. Please upload MP4, AVI, MOV, MKV, or WebM files.')
             return redirect(request.url)
     
-    return render_template("upload.html", creator=user.creator)
+    return render_template("upload.html", creator=user.creator, max_file_size=MAX_FILE_SIZE)
 
 
 @app.route('/uploads/videos/<username>/<filename>')
 def uploaded_video(username, filename):
     creator_upload_dir = os.path.join(app.config['UPLOAD_FOLDER'], username)
     return send_from_directory(creator_upload_dir, filename)
+
+
+@app.route('/uploads/avatars/<filename>')
+def uploaded_avatar(filename):
+    return send_from_directory(AVATAR_FOLDER, filename)
+
+
+@app.route('/follow/<username>', methods=['POST'])
+@login_required
+def follow_user(username):
+    user_to_follow = User.query.filter_by(username=username).first_or_404()
+    if user_to_follow == current_user:
+        flash("You cannot follow yourself!")
+        return redirect(url_for('creator_profile', username=username))
+    
+    if current_user.is_following(user_to_follow):
+        current_user.unfollow(user_to_follow)
+        db.session.commit()
+        flash(f"You unfollowed @{username}.")
+    else:
+        current_user.follow(user_to_follow)
+        db.session.commit()
+        flash(f"You are now following @{username}!")
+        
+    return redirect(url_for('creator_profile', username=username))
 
 
 @app.route("/subscribe", methods=["GET", "POST"])
@@ -682,7 +779,6 @@ def creator_livestream(username):
     if creator.live_url:
         url = creator.live_url.strip()
         if 'youtube.com/watch?v=' in url or 'youtu.be/' in url:
-            # extract video id
             vid = None
             if 'watch?v=' in url:
                 vid = url.split('watch?v=')[-1].split('&')[0]
@@ -691,14 +787,11 @@ def creator_livestream(username):
             if vid:
                 embed_url = f'https://www.youtube.com/embed/{vid}'
         elif 'facebook.com' in url or 'fb.watch' in url:
-            # Use Facebook video plugin iframe. The `href` must be URL-encoded.
-            # Accept either a facebook video page URL or fb.watch short URL.
             encoded = quote_plus(url)
             embed_url = f'https://www.facebook.com/plugins/video.php?href={encoded}&show_text=0&width=560'
         else:
             embed_url = url
 
-    # Only pass masked stream key to template; never expose the full key to clients
     settings = get_stream_settings()
     rtmp_url = settings.get('rtmp_url') or None
     rtmp_key_masked = _mask_key(settings.get('stream_key')) if is_owner and settings.get('stream_key') else None
@@ -708,16 +801,12 @@ def creator_livestream(username):
 @app.route('/creator/<username>/manage')
 @login_required
 def creator_manage(username):
-    # Only the creator (owner) can access this page
     if not (current_user.is_authenticated and current_user.username == username):
         flash('Access denied.')
         return redirect(url_for('creator_profile', username=username))
 
-    # list of users (for monitoring)
     users = User.query.order_by(User.id.desc()).limit(200).all()
-    # creator's videos
     videos = get_creator_videos(username)
-    # recent payments
     payments = Payment.query.order_by(Payment.created_at.desc()).limit(200).all()
 
     return render_template('creator_manage.html', creator_user=current_user, users=users, videos=videos, payments=payments)
@@ -726,7 +815,6 @@ def creator_manage(username):
 @app.route('/admin/stream', methods=['GET', 'POST'])
 @login_required
 def admin_stream():
-    # Simple admin check: only user with username 'admin' may access.
     if not (current_user.is_authenticated and current_user.username == 'admin'):
         flash('Admin access required.')
         return redirect(url_for('index'))
@@ -741,7 +829,6 @@ def admin_stream():
             db.session.add(setting)
         else:
             setting.rtmp_url = rtmp_url
-            # Only update the stored stream key when a non-empty value is provided
             if stream_key:
                 setting.stream_key = stream_key
 
@@ -771,7 +858,6 @@ def handle_watch(data):
         return
     join_room(room)
     viewer_sid = request.sid
-    # notify the broadcaster that a new viewer wants to watch
     broadcaster_sid = broadcasters.get(room)
     if broadcaster_sid:
         emit('watch', {'viewer': viewer_sid}, to=broadcaster_sid)
@@ -786,7 +872,6 @@ def handle_join(data):
 
 @socketio.on('offer')
 def handle_offer(data):
-    # data should include 'to' (target sid) and 'sdp'
     target = data.get('to')
     if not target:
         return
@@ -822,9 +907,4 @@ def handle_leave(data):
 
 if __name__ == "__main__":
     ensure_database_schema()
-
-    socketio.run(app, host="0.0.0.0", port=5000 , debug=False, allow_unsafe_werkzeug=True)
-
-
-
-
+    socketio.run(app, host="0.0.0.0", port=5000, debug=False, allow_unsafe_werkzeug=True)

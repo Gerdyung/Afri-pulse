@@ -1,4 +1,4 @@
-```html
+
 {% extends "base.html" %}
 
 {% block content %}
@@ -71,12 +71,14 @@
 
           <div class="grid gap-4 sm:grid-cols-2">
             <div>
-              <label for="bank_code" class="block text-sm font-medium text-slate-300 mb-2">Bank Code</label>
-              <input type="text" id="bank_code" name="bank_code" class="w-full rounded-2xl border border-slate-700 bg-slate-950/50 px-4 py-3 text-slate-100 placeholder-slate-500 focus:border-cyan-500 focus:outline-none" placeholder="058">
+              <label for="bank_code" class="block text-sm font-medium text-slate-300 mb-2">Select Bank</label>
+              <select id="bank_code" name="bank_code" required class="w-full rounded-2xl border border-slate-700 bg-slate-950/50 px-4 py-3 text-slate-100 focus:border-cyan-500 focus:outline-none">
+                <option value="">Loading banks...</option>
+              </select>
             </div>
             <div>
-              <label for="account_number" class="block text-sm font-medium text-slate-300 mb-2">Account Number</label>
-              <input type="text" id="account_number" name="account_number" class="w-full rounded-2xl border border-slate-700 bg-slate-950/50 px-4 py-3 text-slate-100 placeholder-slate-500 focus:border-cyan-500 focus:outline-none" placeholder="0123456789">
+              <label for="account_number" class="block text-sm font-medium text-slate-300 mb-2">NUBAN Account Number</label>
+              <input type="text" id="account_number" name="account_number" required maxlength="10" class="w-full rounded-2xl border border-slate-700 bg-slate-950/50 px-4 py-3 text-slate-100 placeholder-slate-500 focus:border-cyan-500 focus:outline-none" placeholder="10-digit account number">
             </div>
           </div>
 
@@ -112,6 +114,28 @@
 
   </div>
 </div>
+<script>
+            document.addEventListener("DOMContentLoaded", async () => {
+              const bankSelect = document.getElementById("bank_code");
+              try {
+                const response = await fetch("https://api.paystack.co/bank");
+                const result = await response.json();
+                if (result.status && result.data) {
+                  bankSelect.innerHTML = '<option value="">Select your bank</option>';
+                  result.data.forEach(bank => {
+                    const option = document.createElement("option");
+                    option.value = bank.code;
+                    option.textContent = bank.name;
+                    bankSelect.appendChild(option);
+                  });
+                } else {
+                  bankSelect.innerHTML = '<option value="">Could not load banks. Enter code manually.</option>';
+                }
+              } catch (e) {
+                bankSelect.innerHTML = '<option value="">Could not load banks. Enter code manually.</option>';
+              }
+            });
+          </script>
 
 
 {% endblock %}

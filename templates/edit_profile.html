@@ -8,63 +8,37 @@
       <h2 class="mt-3 text-3xl font-semibold text-white">Customize your creator page</h2>
     </div>
 
-    <form method="POST" class="space-y-6">
+    <!-- Added enctype="multipart/form-data" for file uploads -->
+    <form method="POST" enctype="multipart/form-data" class="space-y-6">
+      
+      <!-- Profile Picture Upload Field -->
+      <div class="flex items-center gap-6 pb-4 border-b border-slate-800">
+        <img src="{{ url_for('uploaded_avatar', filename=current_user.avatar) if current_user.avatar and current_user.avatar != 'default_avatar.png' else 'https://ui-avatars.com/api/?name=' + current_user.username }}" 
+             alt="Profile Picture" class="h-20 w-20 rounded-full object-cover border-2 border-cyan-500/50">
+        <div class="flex-1">
+          <label for="avatar" class="block text-sm font-medium text-slate-300 mb-2">Change Profile Picture</label>
+          <input type="file" id="avatar" name="avatar" accept="image/*" class="w-full text-sm text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-cyan-500 file:text-slate-950 hover:file:bg-cyan-400">
+        </div>
+      </div>
+
       <div>
         <label for="display_name" class="block text-sm font-medium text-slate-300 mb-2">Display Name</label>
-        <input type="text" id="display_name" name="display_name" value="{{ creator.display_name }}" required class="w-full rounded-2xl border border-slate-700 bg-slate-950/50 px-4 py-3 text-slate-100 placeholder-slate-500 focus:border-cyan-500 focus:outline-none" placeholder="Your creator name">
+        <input type="text" id="display_name" name="display_name" value="{{ creator.display_name }}" required class="w-full rounded-2xl border border-slate-700 bg-slate-950/50 px-4 py-3 text-slate-100 placeholder-slate-500 focus:border-cyan-500 focus:outline-none">
       </div>
 
       <div>
         <label for="subtitle" class="block text-sm font-medium text-slate-300 mb-2">Subtitle</label>
-        <input type="text" id="subtitle" name="subtitle" value="{{ creator.subtitle or '' }}" class="w-full rounded-2xl border border-slate-700 bg-slate-950/50 px-4 py-3 text-slate-100 placeholder-slate-500 focus:border-cyan-500 focus:outline-none" placeholder="e.g. Premium creator content">
+        <input type="text" id="subtitle" name="subtitle" value="{{ creator.subtitle or '' }}" class="w-full rounded-2xl border border-slate-700 bg-slate-950/50 px-4 py-3 text-slate-100 placeholder-slate-500 focus:border-cyan-500 focus:outline-none">
       </div>
 
       <div>
         <label for="description" class="block text-sm font-medium text-slate-300 mb-2">Description</label>
-        <textarea id="description" name="description" rows="6" class="w-full rounded-2xl border border-slate-700 bg-slate-950/50 px-4 py-3 text-slate-100 placeholder-slate-500 focus:border-cyan-500 focus:outline-none" placeholder="Tell your fans what they'll get from your subscription...">{{ creator.description or '' }}</textarea>
+        <textarea id="description" name="description" rows="4" class="w-full rounded-2xl border border-slate-700 bg-slate-950/50 px-4 py-3 text-slate-100 placeholder-slate-500 focus:border-cyan-500 focus:outline-none">{{ creator.description or '' }}</textarea>
       </div>
 
       <div>
         <label for="price" class="block text-sm font-medium text-slate-300 mb-2">Monthly Price (₦)</label>
         <input type="number" id="price" name="price" value="{{ creator.price }}" min="100" step="100" required class="w-full rounded-2xl border border-slate-700 bg-slate-950/50 px-4 py-3 text-slate-100 placeholder-slate-500 focus:border-cyan-500 focus:outline-none">
-      </div>
-
-      <div class="rounded-2xl border border-cyan-500/30 bg-cyan-500/5 p-4">
-        <p class="mb-3 text-sm font-medium text-cyan-300">Paystack Subaccount</p>
-        <div class="space-y-4">
-          <div>
-            <label for="business_name" class="block text-sm font-medium text-slate-300 mb-2">Business Name</label>
-            <input type="text" id="business_name" name="business_name" value="{{ creator.paystack_business_name or '' }}" class="w-full rounded-2xl border border-slate-700 bg-slate-950/50 px-4 py-3 text-slate-100 placeholder-slate-500 focus:border-cyan-500 focus:outline-none" placeholder="Afri Pulse Media">
-          </div>
-
-          <div class="grid gap-4 sm:grid-cols-2">
-            <div>
-              <label for="bank_code" class="block text-sm font-medium text-slate-300 mb-2">Bank Code</label>
-              <input type="text" id="bank_code" name="bank_code" value="{{ creator.paystack_bank_code or '' }}" class="w-full rounded-2xl border border-slate-700 bg-slate-950/50 px-4 py-3 text-slate-100 placeholder-slate-500 focus:border-cyan-500 focus:outline-none" placeholder="058">
-            </div>
-            <div>
-              <label for="account_number" class="block text-sm font-medium text-slate-300 mb-2">Account Number</label>
-              <input type="text" id="account_number" name="account_number" value="{{ creator.paystack_account_number or '' }}" class="w-full rounded-2xl border border-slate-700 bg-slate-950/50 px-4 py-3 text-slate-100 placeholder-slate-500 focus:border-cyan-500 focus:outline-none" placeholder="0123456789">
-            </div>
-          </div>
-
-          <div class="grid gap-4 sm:grid-cols-2">
-            <div>
-              <label for="contact_name" class="block text-sm font-medium text-slate-300 mb-2">Contact Name</label>
-              <input type="text" id="contact_name" name="contact_name" value="{{ creator.paystack_contact_name or '' }}" class="w-full rounded-2xl border border-slate-700 bg-slate-950/50 px-4 py-3 text-slate-100 placeholder-slate-500 focus:border-cyan-500 focus:outline-none" placeholder="Jane Doe">
-            </div>
-            <div>
-              <label for="contact_phone" class="block text-sm font-medium text-slate-300 mb-2">Contact Phone</label>
-              <input type="tel" id="contact_phone" name="contact_phone" value="{{ creator.paystack_contact_phone or '' }}" class="w-full rounded-2xl border border-slate-700 bg-slate-950/50 px-4 py-3 text-slate-100 placeholder-slate-500 focus:border-cyan-500 focus:outline-none" placeholder="08012345678">
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div>
-        <label for="live_url" class="block text-sm font-medium text-slate-300 mb-2">Livestream URL (YouTube/Facebook embed)</label>
-        <input type="url" id="live_url" name="live_url" value="{{ creator.live_url or '' }}" placeholder="https://www.facebook.com/{page}/videos/VIDEO_ID or https://www.youtube.com/watch?v=..." class="w-full rounded-2xl border border-slate-700 bg-slate-950/50 px-4 py-3 text-slate-100 placeholder-slate-500 focus:border-cyan-500 focus:outline-none">
-        <p class="text-xs text-slate-500 mt-2">Optional: paste a YouTube watch URL or a Facebook public video/page URL to embed the livestream on your page.</p>
       </div>
 
       <div class="flex gap-3 pt-4">
@@ -74,4 +48,4 @@
     </form>
   </div>
 </div>
-{% endblock %}
+{% endblock %} 

@@ -1,71 +1,31 @@
-{% extends 'base.html' %}
-{% block title %}{{ creator.display_name }} · Afri-pulse{% endblock %}
-{% block content %}
-<div class="grid gap-10 lg:grid-cols-[1.2fr_0.8fr]">
-  <section class="space-y-8 rounded-3xl border border-slate-800 bg-slate-900/70 p-8 shadow-xl shadow-slate-900/20">
-    <div class="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
-      <div>
-        <p class="text-sm uppercase tracking-[0.24em] text-cyan-400/80">Creator profile</p>
-        <h2 class="mt-3 text-3xl font-semibold text-white">{{ creator.display_name }}</h2>
-        <p class="mt-2 text-slate-400">{{ creator.subtitle }}</p>
-      </div>
-      <div class="flex flex-wrap items-center gap-3">
-        <div class="rounded-3xl bg-slate-800/80 px-5 py-3 text-sm text-slate-300">Starts at ₦{{ creator.price }} / month</div>
-        {% if current_user.is_authenticated and current_user.id == creator_user.id %}
-        <a href="/creator/{{ creator_user.username }}/upload" class="rounded-full bg-cyan-500 px-5 py-3 text-sm font-semibold text-slate-950 transition hover:bg-cyan-400">Upload Video</a>
-        {% endif %}
+<div class="flex items-center justify-between mb-6">
+  <div class="flex items-center gap-4">
+    <img src="{{ url_for('uploaded_avatar', filename=creator_user.avatar) if creator_user.avatar and creator_user.avatar != 'default_avatar.png' else 'https://ui-avatars.com/api/?name=' + creator_user.username }}" 
+         alt="{{ creator_user.username }}" class="h-20 w-20 rounded-full object-cover border-2 border-cyan-500">
+    <div>
+      <h1 class="text-2xl font-bold text-white">{{ creator.display_name }}</h1>
+      <p class="text-slate-400">@{{ creator_user.username }}</p>
+      
+      <!-- Followers / Following Counter -->
+      <div class="mt-1 flex items-center gap-4 text-sm">
+        <span><strong class="text-white">{{ creator_user.followers.count() }}</strong> <span class="text-slate-400">Followers</span></span>
+        <span><strong class="text-white">{{ creator_user.followed.count() }}</strong> <span class="text-slate-400">Following</span></span>
       </div>
     </div>
-    <div class="rounded-3xl border border-slate-800 bg-slate-950/70 p-6">
-      <p class="text-slate-300">{{ creator.description }}</p>
-      <ul class="mt-6 space-y-4">
-        <li class="flex items-start gap-3">
-          <span class="mt-1 inline-flex h-9 w-9 items-center justify-center rounded-2xl bg-cyan-500/10 text-cyan-300">✓</span>
-          <span class="text-slate-400">Exclusive posts and galleries</span>
-        </li>
-        <li class="flex items-start gap-3">
-          <span class="mt-1 inline-flex h-9 w-9 items-center justify-center rounded-2xl bg-cyan-500/10 text-cyan-300">✓</span>
-          <span class="text-slate-400">Member-only messages and updates</span>
-        </li>
-        <li class="flex items-start gap-3">
-          <span class="mt-1 inline-flex h-9 w-9 items-center justify-center rounded-2xl bg-cyan-500/10 text-cyan-300">✓</span>
-          <span class="text-slate-400">Premium community access</span>
-        </li>
-      </ul>
-    </div>
+  </div>
 
-    {% if videos %}
-    <div class="rounded-3xl border border-slate-800 bg-slate-950/70 p-6">
-      <h3 class="text-xl font-semibold text-white mb-6">Exclusive Videos</h3>
-      <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {% for video in videos %}
-        <div class="rounded-3xl border border-slate-800 bg-slate-900/80 overflow-hidden">
-          <video controls class="w-full aspect-video" preload="metadata">
-            <source src="{{ video.url }}" type="video/mp4">
-            Your browser does not support the video tag.
-          </video>
-          <div class="p-4">
-            <p class="text-sm text-slate-400 truncate">{{ video.filename }}</p>
-          </div>
-        </div>
-        {% endfor %}
-      </div>
-    </div>
-    {% endif %}
-  </section>
-
-  <aside class="space-y-6 rounded-3xl border border-slate-800 bg-slate-900/70 p-8 shadow-xl shadow-slate-900/20">
-    <div class="rounded-3xl bg-slate-950/80 p-6 text-center">
-      <p class="text-sm uppercase tracking-[0.24em] text-cyan-400/80">Ready to subscribe?</p>
-      <p class="mt-4 text-3xl font-semibold text-white">₦{{ creator.price }}</p>
-      <p class="mt-3 text-slate-400">Secure checkout powered by Paystack.</p>
-      <a href="/subscribe" class="mt-6 inline-flex w-full justify-center rounded-full bg-cyan-500 px-6 py-3 text-sm font-semibold text-slate-950 transition hover:bg-cyan-400">Subscribe now</a>
-    </div>
-
-    <div class="rounded-3xl border border-slate-800 bg-slate-950/70 p-6">
-      <p class="text-sm uppercase tracking-[0.24em] text-slate-500">Why this platform</p>
-      <p class="mt-4 text-slate-400">A clean, professional layout with support for creator profiles and secure transactions.</p>
-    </div>
-  </aside>
+  <!-- X.com Style Follow / Unfollow Button -->
+  {% if current_user.is_authenticated and current_user.id != creator_user.id %}
+    <form action="{{ url_for('follow_user', username=creator_user.username) }}" method="POST">
+      {% if current_user.is_following(creator_user) %}
+        <button type="submit" class="rounded-full border border-slate-600 px-6 py-2 text-sm font-semibold text-white hover:border-red-500 hover:bg-red-500/10 hover:text-red-400 transition">
+          Following
+        </button>
+      {% else %}
+        <button type="submit" class="rounded-full bg-white px-6 py-2 text-sm font-semibold text-slate-950 hover:bg-slate-200 transition">
+          Follow
+        </button>
+      {% endif %}
+    </form>
+  {% endif %}
 </div>
-{% endblock %}

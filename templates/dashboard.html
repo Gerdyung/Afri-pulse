@@ -4,11 +4,21 @@
 <div class="grid gap-10 lg:grid-cols-[1.2fr_0.8fr]">
   <section class="space-y-8">
     <div class="rounded-3xl border border-slate-800 bg-slate-900/70 p-8 shadow-xl shadow-slate-900/20">
-      <div class="flex items-center justify-between">
-        <div>
-          <p class="text-sm uppercase tracking-[0.24em] text-cyan-400/80">Your Profile</p>
-          <h2 class="mt-3 text-3xl font-semibold text-white">{{ creator.display_name }}</h2>
-          <p class="mt-2 text-slate-400">{{ creator.subtitle }}</p>
+      <div class="flex items-center justify-between gap-6">
+        <div class="flex items-center gap-4">
+          <!-- Profile Picture -->
+          <img src="{{ url_for('uploaded_avatar', filename=current_user.avatar) if current_user.avatar and current_user.avatar != 'default_avatar.png' else 'https://ui-avatars.com/api/?name=' + current_user.username }}" 
+               alt="{{ current_user.username }}" class="h-20 w-20 rounded-full object-cover border-2 border-cyan-500/80 shadow-lg">
+          <div>
+            <h2 class="text-3xl font-semibold text-white">{{ creator.display_name }}</h2>
+            <p class="text-slate-400">@{{ current_user.username }}</p>
+            
+            <!-- Followers / Following Counter like X.com -->
+            <div class="mt-2 flex items-center gap-4 text-sm">
+              <span><strong class="text-white">{{ current_user.followers.count() }}</strong> <span class="text-slate-400">Followers</span></span>
+              <span><strong class="text-white">{{ current_user.followed.count() }}</strong> <span class="text-slate-400">Following</span></span>
+            </div>
+          </div>
         </div>
         <a href="/dashboard/edit" class="rounded-full bg-cyan-500 px-6 py-3 text-sm font-semibold text-slate-950 transition hover:bg-cyan-400">Edit Profile</a>
       </div>
@@ -27,33 +37,6 @@
         </div>
       </div>
     </div>
-
-    {% if videos %}
-    <div class="rounded-3xl border border-slate-800 bg-slate-950/70 p-6">
-      <div class="flex items-center justify-between mb-6">
-        <h3 class="text-xl font-semibold text-white">Your Videos</h3>
-        <span class="bg-cyan-500/20 text-cyan-300 text-sm font-semibold px-4 py-2 rounded-full">{{ videos|length }} uploaded</span>
-      </div>
-      <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {% for video in videos %}
-        <div class="rounded-3xl border border-slate-800 bg-slate-900/80 overflow-hidden">
-          <video controls class="w-full aspect-video" preload="metadata">
-            <source src="{{ video.url }}" type="video/mp4">
-            Your browser does not support the video tag.
-          </video>
-          <div class="p-4">
-            <p class="text-sm text-slate-400 truncate">{{ video.filename }}</p>
-          </div>
-        </div>
-        {% endfor %}
-      </div>
-    </div>
-    {% else %}
-    <div class="rounded-3xl border border-dashed border-slate-700 bg-slate-950/50 p-8 text-center">
-      <p class="text-slate-400 mb-4">No videos uploaded yet</p>
-      <p class="text-sm text-slate-500">Start uploading videos to share exclusive content with your subscribers</p>
-    </div>
-    {% endif %}
   </section>
 
   <aside class="space-y-6">
@@ -63,17 +46,6 @@
         <a href="/creator/{{ current_user.username }}/upload" class="block w-full rounded-full bg-cyan-500 px-6 py-3 text-sm font-semibold text-slate-950 transition hover:bg-cyan-400 text-center">Upload Video</a>
         <a href="/creator/{{ current_user.username }}" class="block w-full rounded-full border border-slate-700 px-6 py-3 text-sm font-semibold text-slate-200 transition hover:border-slate-500 text-center">View Public Profile</a>
         <a href="/creator/{{ current_user.username }}/livestream" class="block w-full rounded-full bg-violet-600 px-6 py-3 text-sm font-semibold text-white transition hover:bg-violet-500 text-center">Live Stream</a>
-      </div>
-    </div>
-
-    <div class="rounded-3xl border border-slate-800 bg-slate-950/70 p-6">
-      <p class="text-sm uppercase tracking-[0.24em] text-slate-500 mb-4">Account</p>
-      <div class="space-y-2 text-sm">
-        <p><span class="text-slate-500">Username:</span> <span class="text-slate-300">{{ current_user.username }}</span></p>
-        <p><span class="text-slate-500">Email:</span> <span class="text-slate-300">{{ current_user.email }}</span></p>
-      </div>
-      <div class="mt-6">
-        <a href="/logout" class="block w-full text-center rounded-full border border-rose-500/20 px-4 py-2 text-sm font-semibold text-rose-300 transition hover:border-rose-500">Logout</a>
       </div>
     </div>
   </aside>
