@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 {% extends 'base.html' %}
 {% block title %}Livestream · Afri-pulse{% endblock %}
 {% block content %}
@@ -48,3 +49,55 @@
 <script src="/static/js/livestream.js"></script>
 <script src="/static/js/gifts.js"></script>
 {% endblock %}
+=======
+{% extends 'base.html' %}
+{% block title %}Livestream · Afri-pulse{% endblock %}
+{% block content %}
+<div class="mx-auto max-w-3xl">
+  <div class="rounded-3xl border border-slate-800 bg-slate-900/70 p-8 shadow-xl">
+    <h2 class="text-2xl font-semibold mb-4">Test Livestream (WebRTC)</h2>
+
+    <p class="text-sm text-slate-400 mb-4">Use this page to test the built-in WebRTC broadcaster/viewer flow. No external API key required.</p>
+
+    <div class="mb-4">
+      <label class="block text-sm text-slate-300 mb-2" for="room">Room name</label>
+      <input id="room" class="w-full rounded-2xl border border-slate-700 bg-slate-950/50 px-4 py-3 text-slate-100" placeholder="default" />
+    </div>
+
+    <div class="stream-controls flex gap-3 mb-6">
+      <button id="startHost" class="rounded-full bg-cyan-500 px-4 py-2 text-sm font-semibold text-slate-950">Start as Broadcaster</button>
+      <button id="startViewer" class="rounded-full bg-violet-600 px-4 py-2 text-sm font-semibold text-white">Join as Viewer</button>
+      <button id="exitStream" class="rounded-full bg-red-600 px-4 py-2 text-sm font-semibold text-white hidden">Exit Stream</button>
+      <button id="giftBtn" type="button" class="rounded-full bg-yellow-400 px-4 py-2 text-sm font-semibold text-slate-900">Send Gift</button>
+    </div>
+
+    <form id="giftForm" class="mb-6 hidden max-w-md space-y-3 rounded-2xl border border-slate-800 bg-slate-950/60 p-4">
+      <label class="block text-sm text-slate-300" for="giftAmount">Gift amount (NGN)</label>
+      <input id="giftAmount" name="amount" type="number" min="1" step="0.01" value="100" required
+        class="w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-slate-100">
+      <label class="block text-sm text-slate-300" for="giftEmail">Receipt email</label>
+      <input id="giftEmail" name="email" type="email" required
+        class="w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-slate-100" placeholder="you@example.com">
+      <button type="submit" class="rounded-full bg-cyan-500 px-5 py-3 font-semibold text-slate-950">Continue to secure checkout</button>
+    </form>
+    <p id="giftMessage" class="mb-4 text-sm text-slate-300" role="status" aria-live="polite"></p>
+    <div id="giftFeed" class="gift-feed" aria-live="polite" aria-atomic="false"></div>
+
+    <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+      <div>
+        <p class="text-sm text-slate-400 mb-2">Local / broadcaster preview</p>
+        <video id="localVideo" autoplay muted playsinline class="w-full rounded-md bg-black"></video>
+      </div>
+      <div>
+        <p class="text-sm text-slate-400 mb-2">Remote / viewer</p>
+        <video id="remoteVideo" autoplay playsinline class="w-full rounded-md bg-black"></video>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+<script src="/static/js/livestream.js"></script>
+<script src="/static/js/gifts.js"></script>
+{% endblock %}
+>>>>>>> a57bde2 (Initial commit)

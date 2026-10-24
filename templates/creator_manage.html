@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 {% extends 'base.html' %}
 {% block title %}Manage — {{ creator_user.username }}{% endblock %}
 {% block content %}
@@ -51,3 +52,58 @@
 
 </div>
 {% endblock %}
+=======
+{% extends 'base.html' %}
+{% block title %}Manage — {{ creator_user.username }}{% endblock %}
+{% block content %}
+<div class="mx-auto max-w-5xl space-y-6">
+  <h2 class="text-xl font-semibold">Creator Management — {{ creator_user.username }}</h2>
+
+  <section class="rounded p-4 bg-slate-800">
+    <h3 class="font-medium">Recent Users</h3>
+    <ul class="mt-2 space-y-1 text-sm">
+      {% for u in users %}
+        <li>{{ u.id }} — {{ u.username }} &lt;{{ u.email }}&gt;</li>
+      {% else %}
+        <li class="text-slate-400">No users found.</li>
+      {% endfor %}
+    </ul>
+  </section>
+
+  <section class="rounded p-4 bg-slate-800">
+    <h3 class="font-medium">Your Videos</h3>
+    <ul class="mt-2 space-y-1 text-sm">
+      {% for v in videos %}
+        <li>{{ v.filename }} — <a href="{{ v.url }}" class="text-cyan-400">Open</a></li>
+      {% else %}
+        <li class="text-slate-400">No videos found.</li>
+      {% endfor %}
+    </ul>
+  </section>
+
+  <section class="rounded p-4 bg-slate-800">
+    <h3 class="font-medium">Recent Payments</h3>
+    <div class="payments-table-wrap">
+      <table class="w-full text-sm mt-2">
+        <thead>
+          <tr class="text-left text-slate-400"><th>When</th><th>Email</th><th>Amount</th><th>Reference</th></tr>
+        </thead>
+        <tbody>
+          {% for p in payments %}
+            <tr>
+              <td class="text-slate-300">{{ p.created_at }}</td>
+              <td class="text-slate-300">{{ p.email }}</td>
+              <td class="text-slate-300">{{ '%.2f' % (p.amount/100) }}</td>
+              <td class="text-slate-300">{{ p.reference }}</td>
+            </tr>
+          {% else %}
+            <tr><td colspan="4" class="text-slate-400">No payments recorded yet.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+</div>
+{% endblock %}
+>>>>>>> a57bde2 (Initial commit)

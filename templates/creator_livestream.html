@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 <!doctype html>
 <html lang="en">
 <head>
@@ -212,4 +213,220 @@
 </div>
 
 <script src="/static/js/livestream.js"></script>
+=======
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Live - {{ username }}</title>
+  <link rel="stylesheet" href="/static/css/styles.css">
+</head>
+<body class="p-6">
+  <h1 class="text-2xl font-bold mb-4">Live: {{ username }}</h1>
+  {% if is_owner %}
+    <div>
+      <button id="startBtn" class="px-4 py-2 bg-green-600 text-white rounded">Start Broadcast</button>
+      <button id="stopBtn" class="px-4 py-2 bg-red-600 text-white rounded hidden">Stop Broadcast</button>
+    </div>
+    <p class="mt-4">Local preview:</p>
+    <video id="localVideo" class="stream-player" autoplay muted playsinline style="width:640px; height:auto; background:#000"></video>
+  {% else %}
+    <p>Watching: {{ username }}</p>
+    <video id="remoteVideo" class="stream-player" autoplay playsinline controls style="width:640px; height:auto; background:#000"></video>
+  {% endif %}
+
+  {% if embed_url %}
+    <div class="mt-6">
+      <p class="text-sm text-slate-400">Embedded livestream:</p>
+      <div class="stream-frame" style="position:relative;padding-top:56.25%;">
+        <iframe src="{{ embed_url }}" style="position:absolute;left:0;top:0;width:100%;height:100%;border:0;" allowfullscreen allow="autoplay; encrypted-media"></iframe>
+      </div>
+    </div>
+  {% endif %}
+
+  {% if not is_owner %}
+    <section class="mt-6 rounded-2xl border border-slate-800 bg-slate-900/70 p-5">
+      <button id="giftBtn" type="button" class="rounded-full bg-amber-400 px-5 py-3 font-semibold text-slate-950 transition hover:bg-amber-300">
+        Send a gift
+      </button>
+      <form id="giftForm" data-room="{{ username }}" class="mt-4 hidden max-w-md space-y-3">
+        <label class="block text-sm text-slate-300" for="giftAmount">Gift amount (NGN)</label>
+        <input id="giftAmount" name="amount" type="number" min="1" step="0.01" value="100" required
+          class="w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-slate-100">
+        <label class="block text-sm text-slate-300" for="giftEmail">Receipt email</label>
+        <input id="giftEmail" name="email" type="email" value="{{ current_user.email if current_user.is_authenticated else '' }}" required
+          class="w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-slate-100" placeholder="you@example.com">
+        <button type="submit" class="rounded-full bg-cyan-500 px-5 py-3 font-semibold text-slate-950 transition hover:bg-cyan-400">
+          Continue to secure checkout
+        </button>
+      </form>
+      <p id="giftMessage" class="mt-3 text-sm text-slate-300" role="status" aria-live="polite"></p>
+    </section>
+  {% endif %}
+  <div id="giftFeed" class="gift-feed" aria-live="polite" aria-atomic="false"></div>
+
+  <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+  <script>
+    const username = {{ (username|tojson) }};
+    const isOwner = {{ 'true' if is_owner else 'false' }};
+    const socket = io();
+    window.liveSocket = socket;
+
+    const pcs = {}; // peer connections indexed by remote socket id
+
+    const configuration = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] };
+
+    if (isOwner) {
+      const startBtn = document.getElementById('startBtn');
+      const stopBtn = document.getElementById('stopBtn');
+      const localVideo = document.getElementById('localVideo');
+      let localStream = null;
+
+      startBtn.addEventListener('click', async () => {
+        try {
+          localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+          localVideo.srcObject = localStream;
+          socket.emit('broadcaster', { room: username });
+          startBtn.classList.add('hidden');
+          stopBtn.classList.remove('hidden');
+        } catch (err) {
+          alert('Could not get camera/microphone: ' + err.message);
+        }
+      });
+
+      stopBtn.addEventListener('click', () => {
+        if (localStream) {
+          localStream.getTracks().forEach(t => t.stop());
+          localStream = null;
+        }
+        // close peers
+        Object.values(pcs).forEach(pc => pc.close());
+        socket.disconnect();
+        stopBtn.classList.add('hidden');
+        startBtn.classList.remove('hidden');
+      });
+
+      socket.on('watch', async (data) => {
+        const viewerId = data.viewer;
+        // create a peer connection for this viewer
+        const pc = new RTCPeerConnection(configuration);
+        pcs[viewerId] = pc;
+
+        // add local tracks
+        localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
+
+        pc.onicecandidate = e => {
+          if (e.candidate) {
+            socket.emit('candidate', { to: viewerId, candidate: e.candidate });
+          }
+        };
+
+        const offer = await pc.createOffer();
+        await pc.setLocalDescription(offer);
+
+        socket.emit('offer', { to: viewerId, sdp: pc.localDescription, from: socket.id });
+      });
+
+      socket.on('answer', async (data) => {
+        const from = data.from;
+        const sdp = data.sdp;
+        const pc = pcs[from];
+        if (!pc) return;
+        await pc.setRemoteDescription(sdp);
+      });
+
+      socket.on('candidate', async (data) => {
+        const from = data.from;
+        const candidate = data.candidate;
+        const pc = pcs[from];
+        if (!pc) return;
+        try {
+          await pc.addIceCandidate(candidate);
+        } catch (e) { console.error(e); }
+      });
+
+    } else {
+      const remoteVideo = document.getElementById('remoteVideo');
+      let pc = null;
+
+      socket.on('connect', () => {
+        socket.emit('watch', { room: username });
+      });
+
+      socket.on('offer', async (data) => {
+        // offer from broadcaster
+        const sdp = data.sdp;
+        const from = data.from; // broadcaster id
+        pc = new RTCPeerConnection(configuration);
+        pcs[from] = pc;
+
+        pc.ontrack = e => {
+          remoteVideo.srcObject = e.streams[0];
+        };
+
+        pc.onicecandidate = e => {
+          if (e.candidate) {
+            socket.emit('candidate', { to: from, candidate: e.candidate });
+          }
+        };
+
+        await pc.setRemoteDescription(sdp);
+        const answer = await pc.createAnswer();
+        await pc.setLocalDescription(answer);
+
+        socket.emit('answer', { to: data.from, sdp: pc.localDescription, from: socket.id });
+      });
+
+      socket.on('candidate', async (data) => {
+        const candidate = data.candidate;
+        if (!pc) return;
+        try { await pc.addIceCandidate(candidate); } catch (e) { console.error(e); }
+      });
+    }
+  </script>
+  <script src="/static/js/gifts.js"></script>
+</body>
+</html>
+{% extends 'base.html' %}
+{% block title %}{{ username }} · Live Stream{% endblock %}
+{% block content %}
+<div class="mx-auto max-w-4xl">
+  <div class="rounded-3xl border border-slate-800 bg-slate-900/70 p-6">
+    <h2 class="text-xl font-semibold mb-4">Live Stream — {{ username }}</h2>
+
+    <div class="mb-4">
+      {% if is_owner %}
+        <p class="text-sm text-slate-400">You are the creator. Start streaming to go live.</p>
+        {% if rtmp_url %}
+          <div class="mt-2 mb-2 p-2 rounded bg-slate-800">
+            <p class="text-sm">RTMP Push URL: <span class="font-mono">{{ rtmp_url }}</span></p>
+            {% if rtmp_key_masked %}
+              <p class="text-sm">Stream Key: <span class="font-mono">{{ rtmp_key_masked }}</span> <em class="text-xs">(keep private)</em></p>
+            {% endif %}
+          </div>
+        {% endif %}
+        <button id="startHost" class="rounded-full bg-cyan-500 px-4 py-2 text-sm font-semibold text-slate-950">Start Stream</button>
+      {% else %}
+        <p class="text-sm text-slate-400">Watching as viewer.</p>
+      {% endif %}
+      <button id="startViewer" class="rounded-full bg-violet-600 px-4 py-2 text-sm font-semibold text-white ml-2">Join as Viewer</button>
+    </div>
+
+    <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+      <div>
+        <video id="localVideo" autoplay muted playsinline class="w-full rounded-md bg-black"></video>
+      </div>
+      <div>
+        <video id="remoteVideo" autoplay playsinline class="w-full rounded-md bg-black"></video>
+      </div>
+    </div>
+
+    <input id="room" type="hidden" value="{{ username }}">
+
+  </div>
+</div>
+
+<script src="/static/js/livestream.js"></script>
+>>>>>>> a57bde2 (Initial commit)
 {% endblock %}

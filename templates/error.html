@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 {% extends 'base.html' %}
 {% block title %}Error · Afri-Pulse{% endblock %}
 {% block content %}
@@ -10,3 +11,17 @@
   </div>
 </div>
 {% endblock %}
+=======
+{% extends 'base.html' %}
+{% block title %}Error · Afri-Pulse{% endblock %}
+{% block content %}
+<div class="mx-auto max-w-3xl rounded-3xl border border-rose-500/20 bg-slate-900/70 p-10 shadow-2xl shadow-slate-900/20">
+  <div class="space-y-6 text-center">
+    <div class="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-rose-500/10 text-4xl text-rose-300">!</div>
+    <h2 class="text-3xl font-semibold text-white">Something went wrong</h2>
+    <p class="text-slate-400">{{ message }}</p>
+    <a href="/" class="inline-flex items-center justify-center rounded-full bg-slate-700 px-6 py-3 text-sm font-semibold text-slate-100 transition hover:bg-slate-600">Back to home</a>
+  </div>
+</div>
+{% endblock %}
+>>>>>>> a57bde2 (Initial commit)
