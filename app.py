@@ -1,4 +1,4 @@
-<<<<<<< HEAD
+
 import os
 import requests
 from flask import Flask, render_template, request, redirect, url_for, flash, send_from_directory, jsonify
@@ -1654,7 +1654,7 @@ def handle_leave(data):
 if __name__ == "__main__":
     ensure_database_schema()
     # Use socketio.run to enable WebSocket support (eventlet recommended)
-    socketio.run(app, debug=True, port=5000)
+    socketio.run(app, host='0.0.0.0', port=5000, debug=true)
 
 
 
