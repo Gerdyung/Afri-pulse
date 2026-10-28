@@ -38,9 +38,15 @@ app.secret_key = FLASK_SECRET_KEY
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///afri-pulse.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-# File upload configuration
-UPLOAD_FOLDER = 'uploads/videos'
-AVATAR_FOLDER = 'uploads/avatars'
+# File upload configuration - Handle read-only file systems (like Pxxl/Render) by using /tmp when in production
+BASE_DIR = os.path.abspath(os.path.dirname(__file__))
+if os.environ.get('PXXL') or os.environ.get('RENDER') or os.environ.get('PRODUCTION'):
+    UPLOAD_FOLDER = os.path.join('/tmp', 'uploads', 'videos')
+    AVATAR_FOLDER = os.path.join('/tmp', 'uploads', 'avatars')
+else:
+    UPLOAD_FOLDER = os.path.join(BASE_DIR, 'uploads', 'videos')
+    AVATAR_FOLDER = os.path.join(BASE_DIR, 'uploads', 'avatars')
+
 ALLOWED_EXTENSIONS = {'mp4', 'avi', 'mov', 'mkv', 'webm'}
 ALLOWED_AVATAR_EXTENSIONS = {'png', 'jpg', 'jpeg', 'webp', 'gif'}
 
@@ -56,8 +62,12 @@ MAX_REQUEST_SIZE = MAX_FILE_SIZE + 1 * 1024 * 1024  # Allow multipart form overh
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['MAX_CONTENT_LENGTH'] = MAX_REQUEST_SIZE
 
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-os.makedirs(AVATAR_FOLDER, exist_ok=True)
+# Safely create directories with fallback error handling
+try:
+    os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+    os.makedirs(AVATAR_FOLDER, exist_ok=True)
+except OSError as e:
+    app.logger.warning(f"Could not create local directories (Read-only file system): {e}")
 
 # Initialize extensions
 db = SQLAlchemy(app)
@@ -552,6 +562,7 @@ def edit_profile():
                 filename = secure_filename(file.filename)
                 unique_filename = f"{current_user.id}_{uuid.uuid4().hex[:8]}_{filename}"
                 file_path = os.path.join(AVATAR_FOLDER, unique_filename)
+                os.makedirs(AVATAR_FOLDER, exist_ok=True)
                 file.save(file_path)
                 current_user.avatar = unique_filename
 
@@ -908,3 +919,8 @@ def handle_leave(data):
 if __name__ == "__main__":
     ensure_database_schema()
     socketio.run(app, host="0.0.0.0", port=5000, debug=False, allow_unsafe_werkzeug=True)
+    
+    
+    
+    
+            
