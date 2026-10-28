@@ -112,7 +112,6 @@ def ensure_database_schema():
         db.session.commit()
 
 
-ensure_database_schema()
 
 login_manager = LoginManager()
 login_manager.init_app(app)
@@ -916,10 +915,13 @@ def handle_leave(data):
         emit('viewer-left', {'viewer': request.sid}, to=broadcaster_sid)
 
 
-if __name__ == "__main__":
+with app.app_context():
     ensure_database_schema()
-    socketio.run(app, host="0.0.0.0", port=5000, debug=False, allow_unsafe_werkzeug=True)
-    
+
+if __name__ == "__main__":
+    # 2. This only runs when you execute `python app.py` locally
+    port = int(os.environ.get("PORT", 5000))
+    socketio.run(app, host="0.0.0.0", port=port, debug=False, allow_unsafe_werkzeug=True)
     
     
     
