@@ -12,6 +12,7 @@ from werkzeug.exceptions import RequestEntityTooLarge
 from sqlalchemy import inspect, text
 from datetime import datetime
 from decimal import Decimal, InvalidOperation
+from supabase import create_client, Client
 import uuid
 
 load_dotenv()
@@ -22,6 +23,11 @@ FLASK_SECRET_KEY = os.getenv("FLASK_SECRET_KEY", "change-this-secret")
 # RTMP streaming settings (kept server-side; do not expose full keys to clients)
 STREAM_RTMP_URL = os.getenv("STREAM_RTMP_URL", "")
 STREAM_KEY = os.getenv("STREAM_KEY", "")
+url: str = "https://pjnpcggnvnptlxormkkt.supabase.co"
+key: str = "sb_publishable_8YQlCxajNgGLBBS2KgvhNA_dnH00xw0"
+
+response = supabase.table("your_table_name").select("*").execute()
+print(response.data)
 
 
 def _mask_key(key: str) -> str:
@@ -35,7 +41,7 @@ app = Flask(__name__)
 app.secret_key = FLASK_SECRET_KEY
 
 # Database configuration
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///afri-pulse.db'
+app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', 'sqlite:///afri-pulse.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 # File upload configuration - Handle read-only file systems (like Pxxl/Render) by using /tmp when in production
